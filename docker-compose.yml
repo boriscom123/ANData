@@ -1,0 +1,46 @@
+version: "3.7"
+
+services:
+  php:
+    build:
+      context: ./docker/php
+    volumes:
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+      - ./app/public/:/var/www/html/
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - backend
+
+  nginx:
+    build:
+      context: ./docker/nginx
+    depends_on:
+      - php
+    volumes:
+      - ./docker/nginx/default.nginx:/etc/nginx/conf.d/default.conf
+      - ./app/public/:/var/www/html/
+    ports:
+      - "80:80"
+    networks:
+      - backend
+
+  mysql:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    volumes:
+      - ./docker/mysql/data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
